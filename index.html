@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audience Segment Request Tracker</title>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f7f7f6;
+    --bg-tertiary: #f0efee;
+    --text: #1a1a1a;
+    --text-secondary: #666662;
+    --text-tertiary: #999994;
+    --border: rgba(0,0,0,0.12);
+    --border-strong: rgba(0,0,0,0.22);
+    --accent: #1a1a2e;
+    --accent-light: #e8e8f0;
+    --success-bg: #e8f5ee;
+    --success-border: #2d9e6b;
+    --success-text: #0f5c36;
+    --warning-bg: #fff8e6;
+    --warning-border: #d4961a;
+    --warning-text: #7a5200;
+    --danger-bg: #fef0ee;
+    --danger-border: #d95a3a;
+    --danger-text: #8a2010;
+    --radius: 8px;
+    --radius-sm: 5px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e;
+      --bg-secondary: #2c2c2e;
+      --bg-tertiary: #3a3a3c;
+      --text: #f5f5f0;
+      --text-secondary: #aeaea8;
+      --text-tertiary: #6e6e68;
+      --border: rgba(255,255,255,0.1);
+      --border-strong: rgba(255,255,255,0.2);
+      --accent: #a8a8f0;
+      --accent-light: #28283a;
+      --success-bg: #0e2e1c;
+      --success-border: #2d9e6b;
+      --success-text: #6ddba0;
+      --warning-bg: #2e200a;
+      --warning-border: #d4961a;
+      --warning-text: #ffc94d;
+      --danger-bg: #2e100a;
+      --danger-border: #d95a3a;
+      --danger-text: #ff9980;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg-secondary);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── AUTH SCREEN ── */
+  #auth-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .auth-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 2.5rem;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+
+  .auth-logo {
+    width: 52px;
+    height: 52px;
+    background: var(--accent);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+  }
+
+  .auth-logo-inner {
+    width: 24px;
+    height: 24px;
+    border: 2.5px solid rgba(255,255,255,0.85);
+    border-radius: 4px;
+    position: relative;
+  }
+
+  .auth-logo-inner::after {
+    content: '';
+    position: absolute;
+    top: 4px; left: 4px; right: 4px; bottom: 4px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 2px;
+  }
+
+  .auth-card h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .auth-card p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+
+  .auth-perms {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 1.5rem;
+    text-align: left;
+  }
+
+  .auth-perms p {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+  }
+
+  .perm-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 3px 0;
+  }
+
+  .perm-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--success-border);
+    flex-shrink: 0;
+  }
+
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 20px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+  }
+
+  .google-btn:hover {
+    background: var(--bg-secondary);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .google-btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ── APP SCREEN ── */
+  #app-screen { display: none; flex-direction: column; flex: 1; }
+
+  nav {
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-logo {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .nav-logo-inner {
+    width: 14px; height: 14px;
+    border: 1.5px solid rgba(255,255,255,0.85);
+    border-radius: 2px;
+    position: relative;
+  }
+
+  .nav-logo-inner::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px; right: 3px; bottom: 3px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 1px;
+  }
+
+  .nav-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .user-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .user-avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    overflow: hidden;
+  }
+
+  .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .sign-out-btn {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  .sign-out-btn:hover { background: var(--bg-secondary); color: var(--text-secondary); }
+
+  /* ── MAIN LAYOUT ── */
+  main {
+    flex: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem;
+    width: 100%;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 1.75rem;
+  }
+
+  .tab {
+    padding: 9px 16px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .tab.active { color: var(--text); border-bottom-color: var(--text); }
+  .tab .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px; height: 16px;
+    background: var(--danger-bg);
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--danger-text);
+    margin-left: 5px;
+    vertical-align: middle;
+  }
+
+  /* ── STAGE PANELS ── */
+  .stage { display: none; }
+  .stage.active { display: block; }
+
+  /* ── FORM ELEMENTS ── */
+  .section { margin-bottom: 1.4rem; }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+
+  .field label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .field input, .field select, .field textarea {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    background: var(--bg);
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--text);
+    box-shadow: 0 0 0 2px rgba(26,26,46,0.08);
+  }
+
+  .field input.error, .field select.error {
+    border-color: var(--danger-border);
+  }
+
+  .field textarea { resize: vertical; min-height: 60px; }
+
+  .search-wrap { position: relative; }
+  .search-wrap input { width: 100%; }
+
+  .sugg-list {
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0; right: 0;
+    background: var(--bg);
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 200;
+    display: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  }
+
+  .sugg-list.open { display: block; }
+
+  .sugg-item {
+    padding: 7px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text);
+    transition: background 0.1s;
+  }
+
+  .sugg-item:hover { background: var(--bg-secondary); }
+  .sugg-item mark { background: none; font-weight: 600; color: var(--text); }
+
+  .radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .radio-opt {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 0.5px solid var(--border-strong);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    transition: all 0.1s;
+    user-select: none;
+  }
+
+  .radio-opt.selected {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .seg-preview {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    background: var(--bg-secondary);
+    border: 0.5px dashed var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    word-break: break-all;
+    display: none;
+  }
+
+  .info-box {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .divider { height: 0.5px; background: var(--border); margin: 1.4rem 0; }
+
+  .req { color: var(--danger-text); margin-left: 2px; }
+  .err-msg { font-size: 11px; color: var(--danger-text); margin-top: 2px; display: none; }
+
+  /* ── BUTTONS ── */
+  .btn-row { display: flex; gap: 8px; margin-top: 1.4rem; flex-wrap: wrap; }
+
+  .btn-primary {
+    padding: 9px 18px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-secondary {
+    padding: 9px 14px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .btn-ghost {
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--text-tertiary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .btn-ghost:hover { background: var(--bg-secondary); color: var(--text-secondary); }
+
+  /* ── SPINNER ── */
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── BANNERS ── */
+  .banner {
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-top: 1rem;
+    display: none;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .banner.visible { display: flex; }
+  .banner.success { background: var(--success-bg); border: 0.5px solid var(--success-border); }
+  .banner.warning { background: var(--warning-bg); border: 0.5px solid var(--warning-border); }
+  .banner.danger  { background: var(--danger-bg);  border: 0.5px solid var(--danger-border); }
+
+  .banner-icon {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .banner.success .banner-icon { background: var(--success-border); color: #fff; }
+  .banner.warning .banner-icon { background: var(--warning-border); color: #fff; }
+  .banner.danger  .banner-icon { background: var(--danger-border);  color: #fff; }
+
+  .banner-body { flex: 1; }
+  .banner-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .banner.success .banner-title { color: var(--success-text); }
+  .banner.warning .banner-title { color: var(--warning-text); }
+  .banner.danger  .banner-title { color: var(--danger-text); }
+  .banner-msg { font-size: 12px; line-height: 1.5; }
+  .banner.success .banner-msg { color: var(--success-text); }
+  .banner.warning .banner-msg { color: var(--warning-text); }
+  .banner.danger  .banner-msg { color: var(--danger-text); }
+
+  .code-snippet {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+    padding: 4px 7px;
+    margin-top: 6px;
+    word-break: break-all;
+    color: inherit;
+    display: none;
+  }
+
+  /* ── PENDING ITEMS ── */
+  .pending-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  .pending-empty small { display: block; font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+
+  .pending-item {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+
+  .pending-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .pending-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .pending-meta  { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .pending-segname { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-tertiary); margin-top: 3px; }
+
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  .tag-waiting { background: var(--warning-bg); color: var(--warning-text); }
+  .tag-done    { background: var(--success-bg); color: var(--success-text); }
+
+  .fw-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-top: 10px;
+  }
+
+  .fw-section h4 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 560px) {
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    nav { padding: 0 1rem; }
+    main { padding: 1.25rem 1rem; }
+    .nav-title { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ AUTH SCREEN ══ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo"><div class="auth-logo-inner"></div></div>
+    <h1>Audience Segment Tracker</h1>
+    <p>Sign in with your Google account to submit new audience segment requests and track FreeWheel IDs — data writes directly to the Audience Segments spreadsheet.</p>
+    <div class="auth-perms">
+      <p>This app will request permission to:</p>
+      <div class="perm-item"><div class="perm-dot"></div>Read and write to your Google Sheets</div>
+      <div class="perm-item"><div class="perm-dot"></div>View your basic Google profile</div>
+    </div>
+    <button class="google-btn" onclick="handleGoogleSignIn()">
+      <!-- Google G logo SVG -->
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+      Sign in with Google
+    </button>
+    <div id="auth-error" style="margin-top:10px;font-size:12px;color:var(--danger-text);display:none"></div>
+  </div>
+</div>
+
+<!-- ══ APP SCREEN ══ -->
+<div id="app-screen">
+
+  <nav>
+    <div class="nav-brand">
+      <div class="nav-logo"><div class="nav-logo-inner"></div></div>
+      <span class="nav-title">Audience Segment Tracker</span>
+    </div>
+    <div class="nav-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span id="userName" style="display:none"></span>
+      </div>
+      <button class="sign-out-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </nav>
+
+  <main>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('submit')">Submit new segment</button>
+      <button class="tab" id="pendingTab" onclick="switchTab('pending')">Pending FW IDs</button>
+    </div>
+
+    <!-- ════ TAB 1: SUBMIT ════ -->
+    <div class="stage active" id="stage-submit">
+
+      <div class="section">
+        <div class="section-label">Show or movie</div>
+        <div class="grid2">
+          <div class="field">
+            <label>Title <span class="req">*</span></label>
+            <div class="search-wrap">
+              <input type="text" id="titleInput" placeholder="Search existing or enter new…" autocomplete="off" oninput="onTitleInput()">
+              <div class="sugg-list" id="titleSugg"></div>
+            </div>
+            <div class="err-msg" id="titleErr">Title is required</div>
+          </div>
+          <div class="field">
+            <label>Type</label>
+            <div class="radio-group" id="typeGroup" style="margin-top:3px">
+              <div class="radio-opt selected" data-val="Show" onclick="pickType(this)">Show</div>
+              <div class="radio-opt" data-val="Movie" onclick="pickType(this)">Movie</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Segment details</div>
+        <div class="grid2">
+          <div class="field">
+            <label>Genre <span class="req">*</span></label>
+            <select id="genreSelect" onchange="updateSegPreview()">
+              <option value="">Select genre…</option>
+              <option>Adventure</option><option>Automotive/Documentary</option>
+              <option>Comedy</option><option>Comedy/Sitcom</option>
+              <option>Crime</option><option>Daytime</option>
+              <option>Documentary</option><option>Drama</option>
+              <option>Drama/Crime</option><option>Dramedy</option>
+              <option>Entertainment/Game Show</option><option>Game Show</option>
+              <option>Home &amp; Food</option><option>Horror</option>
+              <option>Kids</option><option>Lifestyle</option>
+              <option>Music</option><option>News</option>
+              <option>Reality</option><option>Romance</option>
+              <option>Sci-Fi</option><option>Sports</option>
+              <option>Talk Show</option><option>Thriller/Action</option>
+              <option>True Crime</option><option>Western</option>
+              <option>Other</option>
+            </select>
+            <div class="err-msg" id="genreErr">Genre is required</div>
+          </div>
+          <div class="field">
+            <label>Content URL</label>
+            <input type="url" id="contentUrl" placeholder="https://…">
+          </div>
+        </div>
+        <div class="seg-preview" id="segPreview"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Request info</div>
+        <div class="grid2">
+          <div class="field">
+            <label>Requested by <span class="req">*</span></label>
+            <input type="text" id="requestedBy" placeholder="Your name">
+            <div class="err-msg" id="reqByErr">Name is required</div>
+          </div>
+          <div class="field">
+            <label>Date submitted</label>
+            <input type="date" id="submitDate">
+          </div>
+        </div>
+        <div class="field" style="margin-top:8px">
+          <label>Notes</label>
+          <textarea id="notes" placeholder="Context, priority, special instructions…"></textarea>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-label">Databricks status</div>
+        <div class="info-box" style="margin-bottom:10px">
+          Mark as "Submitted" once you've sent this to Databricks. A reminder will appear in the <strong>Pending FW IDs</strong> tab the next day so you can fill in the Segment Name and FreeWheel ID when they're ready.
+        </div>
+        <div class="radio-group" id="dbGroup">
+          <div class="radio-opt selected" data-val="false" onclick="pickDb(this)">Not yet submitted</div>
+          <div class="radio-opt" data-val="true" onclick="pickDb(this)">✓ Submitted to Databricks</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="submitBtn" onclick="submitForm()">
+          <div class="spinner" id="submitSpinner"></div>
+          Add to tracker
+        </button>
+        <button class="btn-secondary" onclick="clearForm()">Clear</button>
+      </div>
+
+      <div class="banner" id="submitBanner">
+        <div class="banner-icon" id="submitBannerIcon">✓</div>
+        <div class="banner-body">
+          <div class="banner-title" id="submitBannerTitle"></div>
+          <div class="banner-msg" id="submitBannerMsg"></div>
+          <div class="code-snippet" id="submitBannerRow"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════ TAB 2: PENDING FW IDs ════ -->
+    <div class="stage" id="stage-pending">
+      <div id="pendingContent">
+        <div class="pending-empty">
+          Loading…<small>Checking for pending items</small>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// IMPORTANT: Replace this with your actual Google OAuth Client ID
+// Create one at https://console.cloud.google.com/ → APIs & Services → Credentials
+// Set Authorized JavaScript origins to the domain you're hosting this on
+// Add "https://www.googleapis.com/auth/spreadsheets" to the OAuth scope
+const GOOGLE_CLIENT_ID = '28196094152-a6vl9sits6kaq9h5na5sraqovpn2cps6.apps.googleusercontent.com';
+
+const SHEET_ID = '1D5JpDCqmNclIXlVj8BjHSS9a4t4tTYy55u57GD9UkbE';
+const TRACKER_TAB = 'New Segment Request Tracker';
+const SEGMENT_DOC_ID = '1D5JpDCqmNclIXlVj8BjHSS9a4t4tTYy55u57GD9UkbE';
+
+const GENRE_TABS = {
+  'Adventure':'Adventure','Automotive/Documentary':'Automotive-Documentary',
+  'Comedy':'Comedy','Comedy/Sitcom':'Comedy','Dramedy':'Comedy',
+  'Crime':'Crime','Daytime':'Daytime','Documentary':'Documentary',
+  'Drama':'Drama','Drama/Crime':'Drama',
+  'Entertainment/Game Show':'Game Show','Game Show':'Game Show',
+  'Home & Food':'Home & Food','Horror':'Horror',
+  'Kids':'Kids','Lifestyle':'Home & Food',
+  'Music':'Music','News':'News',
+  'Reality':'Reality','Romance':'Romance',
+  'Sci-Fi':'Sci-Fi','Sports':'Sports',
+  'Talk Show':'Talk Show','Thriller/Action':'Thriller-Action',
+  'True Crime':'True Crime','Western':'Western','Other':'Other'
+};
+
+const TITLES = ["48 Hours","American Music Awards","Beyond the Gates","Bold & Beautiful","Boston Blue","CIA","CIA/FBI Combo","Colbert","Culinary Cup","Drew Barrymore Show","Elsbeth","Emmy Awards","Everybody Loves Raymond","FBI","Fire Country","Golden Globes","Grammy Awards","Hollywood Squares","Kennedy Center Honors","Late Night","Latin Grammy Special","Marshals","Matlock","NCIS","NCIS Origins","NCIS: New York","NCIS: Sydney","Neighborhood","NFL","P+ Tony & Ziva","Price Is Right","Sheriff Country","Sheriff Country/Fire Country","Survivor","Tracker","UEFA","Watson","Young & Restless","Dexter","Dexter: Original Sin","Dexter: Resurrection","Dexter: New Blood","Yellowjackets","Lawmen: Bass Reeves","Special Ops: Lioness","1883","1923","Tulsa King","Landman","The Agency","Happy Face","Killing Eve","Longmire","Tony & Ziva","Red Alert","The Guest","MobLand","Flashpoint"];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let accessToken = null;
+let userInfo = null;
+let contentType = 'Show';
+let dbSubmitted = 'false';
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+function handleGoogleSignIn() {
+  if (!window.google) {
+    showAuthError('Google Sign-In library not loaded. Please refresh the page.');
+    return;
+  }
+
+  // Using Google Identity Services Token model for Sheets API access
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+    callback: async (response) => {
+      if (response.error) {
+        showAuthError('Sign-in failed: ' + (response.error_description || response.error));
+        return;
+      }
+      accessToken = response.access_token;
+      await loadUserInfo();
+      showApp();
+    }
+  });
+
+  client.requestAccessToken();
+}
+
+async function loadUserInfo() {
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + accessToken }
+    });
+    userInfo = await r.json();
+    const avatar = document.getElementById('userAvatar');
+    const nameEl = document.getElementById('userName');
+    if (userInfo.picture) {
+      avatar.innerHTML = `<img src="${userInfo.picture}" alt="${userInfo.name}">`;
+    } else {
+      avatar.textContent = (userInfo.name||'?')[0].toUpperCase();
+    }
+    nameEl.textContent = userInfo.given_name || userInfo.name || '';
+    nameEl.style.display = 'inline';
+
+    // Pre-fill requester field
+    if (userInfo.name) {
+      document.getElementById('requestedBy').value = userInfo.given_name || userInfo.name;
+    }
+  } catch(e) { /* non-critical */ }
+}
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  const app = document.getElementById('app-screen');
+  app.style.display = 'flex';
+  app.style.flexDirection = 'column';
+  document.getElementById('submitDate').value = new Date().toISOString().split('T')[0];
+  updatePendingBadge();
+}
+
+function signOut() {
+  if (window.google && accessToken) {
+    google.accounts.oauth2.revoke(accessToken, () => {});
+  }
+  accessToken = null;
+  userInfo = null;
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${t}"]`).classList.add('active');
+  document.getElementById('stage-' + t).classList.add('active');
+  if (t === 'pending') renderPending();
+}
+
+// ─── FORM HELPERS ─────────────────────────────────────────────────────────────
+function onTitleInput() {
+  const v = document.getElementById('titleInput').value.trim();
+  const sugg = document.getElementById('titleSugg');
+  if (!v) { sugg.classList.remove('open'); updateSegPreview(); return; }
+  const hits = TITLES.filter(s => s.toLowerCase().includes(v.toLowerCase())).slice(0, 8);
+  if (!hits.length) { sugg.classList.remove('open'); updateSegPreview(); return; }
+  sugg.innerHTML = hits.map(s => {
+    const re = new RegExp(v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+    const hi = s.replace(re, m => `<mark>${m}</mark>`);
+    return `<div class="sugg-item" onmousedown="pickTitle('${s.replace(/'/g,"\\'")}')"> ${hi}</div>`;
+  }).join('');
+  sugg.classList.add('open');
+  updateSegPreview();
+}
+
+function pickTitle(s) {
+  document.getElementById('titleInput').value = s;
+  document.getElementById('titleSugg').classList.remove('open');
+  document.getElementById('titleErr').style.display = 'none';
+  document.getElementById('titleInput').classList.remove('error');
+  updateSegPreview();
+}
+
+document.getElementById('titleInput').addEventListener('blur', () =>
+  setTimeout(() => document.getElementById('titleSugg').classList.remove('open'), 160));
+
+function pickType(el) {
+  document.querySelectorAll('#typeGroup .radio-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  contentType = el.dataset.val;
+  updateSegPreview();
+}
+
+function pickDb(el) {
+  document.querySelectorAll('#dbGroup .radio-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  dbSubmitted = el.dataset.val;
+}
+
+function updateSegPreview() {
+  const t = document.getElementById('titleInput').value.trim();
+  const p = document.getElementById('segPreview');
+  if (!t) { p.style.display = 'none'; return; }
+  const slug = t.replace(/[^a-zA-Z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+  const prefix = contentType === 'Show' ? 'GL-DDA-1P-SHOW-' : 'GL-DDA-1P-MOVIE-';
+  p.textContent = `Generated segment name: ${prefix}${slug}`;
+  p.style.display = 'block';
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${m}/${day}/${y}`;
+}
+
+function validateForm() {
+  let ok = true;
+  [
+    ['titleInput', 'titleErr', () => !document.getElementById('titleInput').value.trim()],
+    ['genreSelect', 'genreErr', () => !document.getElementById('genreSelect').value],
+    ['requestedBy', 'reqByErr', () => !document.getElementById('requestedBy').value.trim()]
+  ].forEach(([fid, eid, check]) => {
+    const f = document.getElementById(fid), e = document.getElementById(eid);
+    if (check()) { f.classList.add('error'); e.style.display = 'block'; ok = false; }
+    else { f.classList.remove('error'); e.style.display = 'none'; }
+  });
+  return ok;
+}
+
+// ─── SUBMIT ───────────────────────────────────────────────────────────────────
+async function submitForm() {
+  if (!validateForm()) return;
+
+  const btn = document.getElementById('submitBtn');
+  const spinner = document.getElementById('submitSpinner');
+  btn.disabled = true;
+  btn.childNodes[btn.childNodes.length-1].textContent = ' Validating with Claude…';
+  spinner.style.display = 'block';
+
+  const title = document.getElementById('titleInput').value.trim();
+  const genre = document.getElementById('genreSelect').value;
+  const url = document.getElementById('contentUrl').value.trim();
+  const date = document.getElementById('submitDate').value;
+  const reqBy = document.getElementById('requestedBy').value.trim();
+  const notes = document.getElementById('notes').value.trim();
+  const slug = title.replace(/[^a-zA-Z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+  const segName = (contentType==='Show' ? 'GL-DDA-1P-SHOW-' : 'GL-DDA-1P-MOVIE-') + slug;
+  const dateStr = fmtDate(date);
+  const dbStatus = dbSubmitted === 'true' ? 'TRUE' : 'FALSE';
+  const statusNote = dbSubmitted === 'true'
+    ? 'Submitted to Databricks — awaiting FW segment name + ID'
+    : 'Pending Databricks submission';
+
+  // Claude validation
+  let result;
+  try {
+    const prompt = `You're a CBS/Paramount audience segment coordinator. Validate this new segment request. Return ONLY JSON, no markdown or backticks.
+
+Request:
+- Title: ${title}
+- Type: ${contentType}
+- Genre: ${genre}
+- URL: ${url||'none'}
+- Date: ${dateStr}
+- Submitted by: ${reqBy}
+- Databricks: ${dbSubmitted==='true'?'Yes':'No'}
+- Notes: ${notes||'none'}
+
+Valid genre tabs: Adventure, Automotive/Documentary, Comedy, Comedy/Sitcom, Crime, Daytime, Documentary, Drama, Drama/Crime, Entertainment/Game Show, Game Show, Home & Food, Horror, Kids, Music, News, Reality, Romance, Sci-Fi, Sports, Talk Show, Thriller/Action, True Crime, Western
+
+Return JSON:
+{
+  "status": "ok",
+  "issues": [],
+  "summary": "one sentence",
+  "normalizedTitle": "cleaned title (fix spacing/caps)",
+  "suggestedGenreTab": "best matching genre tab",
+  "sheetRow": ["${title}","${genre}","${url}","${dateStr}","${dbStatus}","${reqBy}","","","${statusNote}","${notes}"]
+}`;
+
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const d = await r.json();
+    const raw = (d.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    result = JSON.parse(raw);
+  } catch(e) {
+    result = {
+      status: 'ok', issues: [], summary: 'Segment request logged.',
+      normalizedTitle: title, suggestedGenreTab: GENRE_TABS[genre]||genre,
+      sheetRow: [title, genre, url, dateStr, dbStatus, reqBy, '', '', statusNote, notes]
+    };
+  }
+
+  if (result.status === 'warning' && result.issues?.length) {
+    showBanner('warning', '⚠', 'Review before adding', result.issues.join(' | '), null);
+    resetBtn();
+    return;
+  }
+
+  // Write to tracker sheet
+  btn.childNodes[btn.childNodes.length-1].textContent = ' Writing to sheet…';
+
+  let writeOk = false, writeMsg = '';
+  try {
+    const resp = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(TRACKER_TAB)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + accessToken
+        },
+        body: JSON.stringify({ values: [result.sheetRow] })
+      }
+    );
+
+    if (resp.status === 401) {
+      writeMsg = 'Your session expired — please sign out and sign back in.';
+    } else if (resp.status === 403) {
+      writeMsg = 'Permission denied — make sure the sheet is shared with your Google account.';
+    } else if (!resp.ok) {
+      const j = await resp.json().catch(() => ({}));
+      writeMsg = j?.error?.message || `HTTP ${resp.status}`;
+    } else {
+      const j = await resp.json();
+      writeOk = true;
+      writeMsg = `Row appended to ${j.updates?.updatedRange || TRACKER_TAB}.`;
+    }
+  } catch(netErr) {
+    writeMsg = 'Network error — check your connection.';
+  }
+
+  if (writeOk && dbSubmitted === 'true') {
+    // Save to pending list (localStorage)
+    savePending({
+      id: Date.now(),
+      title: result.normalizedTitle || title,
+      genre,
+      segmentName: (contentType==='Show'?'GL-DDA-1P-SHOW-':'GL-DDA-1P-MOVIE-') + (result.normalizedTitle||title).replace(/[^a-zA-Z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,''),
+      dateAdded: dateStr,
+      reqBy,
+      notes,
+      sheetRow: result.sheetRow
+    });
+    updatePendingBadge();
+  }
+
+  const mainMsg = writeOk
+    ? `${result.summary} ${writeMsg}${dbSubmitted==='true' ? ' Reminder added to Pending FW IDs tab.' : ''}`
+    : `${result.summary || ''} ${writeMsg}`;
+
+  showBanner(
+    writeOk ? 'success' : 'warning',
+    writeOk ? '✓' : '!',
+    writeOk ? 'Added to tracker' : 'Needs attention',
+    mainMsg,
+    writeOk ? null : result.sheetRow?.join(' | ')
+  );
+
+  if (writeOk) clearForm();
+  resetBtn();
+}
+
+function resetBtn() {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = false;
+  document.getElementById('submitSpinner').style.display = 'none';
+  btn.childNodes[btn.childNodes.length-1].textContent = ' Add to tracker';
+}
+
+function showBanner(type, icon, title, msg, row) {
+  const b = document.getElementById('submitBanner');
+  b.className = `banner visible ${type}`;
+  document.getElementById('submitBannerIcon').textContent = icon;
+  document.getElementById('submitBannerTitle').textContent = title;
+  document.getElementById('submitBannerMsg').textContent = msg;
+  const r = document.getElementById('submitBannerRow');
+  if (row) { r.textContent = row; r.style.display = 'block'; }
+  else { r.style.display = 'none'; }
+  b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function clearForm() {
+  ['titleInput','contentUrl','requestedBy','notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('genreSelect').value = '';
+  document.getElementById('submitDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('segPreview').style.display = 'none';
+  document.getElementById('submitBanner').classList.remove('visible');
+  document.querySelectorAll('#typeGroup .radio-opt').forEach((o,i) => o.classList.toggle('selected', i===0));
+  document.querySelectorAll('#dbGroup .radio-opt').forEach((o,i) => o.classList.toggle('selected', i===0));
+  contentType = 'Show'; dbSubmitted = 'false';
+  // Re-fill name
+  if (userInfo?.given_name) document.getElementById('requestedBy').value = userInfo.given_name;
+}
+
+// ─── PENDING ─────────────────────────────────────────────────────────────────
+function getPending() {
+  try { return JSON.parse(localStorage.getItem('seg_pending') || '[]'); } catch(e) { return []; }
+}
+
+function savePending(item) {
+  const list = getPending();
+  list.push(item);
+  try { localStorage.setItem('seg_pending', JSON.stringify(list)); } catch(e) {}
+}
+
+function removePending(id) {
+  const list = getPending().filter(p => p.id !== id);
+  try { localStorage.setItem('seg_pending', JSON.stringify(list)); } catch(e) {}
+}
+
+function updatePendingBadge() {
+  const n = getPending().length;
+  const tab = document.getElementById('pendingTab');
+  const existing = tab.querySelector('.badge');
+  if (existing) existing.remove();
+  if (n > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = n;
+    tab.appendChild(badge);
+  }
+}
+
+function renderPending() {
+  const pending = getPending();
+  const wrap = document.getElementById('pendingContent');
+
+  if (!pending.length) {
+    wrap.innerHTML = `<div class="pending-empty">
+      No pending segments<small>Segments submitted to Databricks will appear here for next-day FW ID entry.</small>
+    </div>`;
+    return;
+  }
+
+  wrap.innerHTML = pending.map(item => `
+    <div class="pending-item" id="pi-${item.id}">
+      <div class="pending-header">
+        <div>
+          <div class="pending-title">${escHtml(item.title)}</div>
+          <div class="pending-meta">${escHtml(item.genre)} &middot; Submitted ${escHtml(item.dateAdded)} by ${escHtml(item.reqBy)}</div>
+          <div class="pending-segname">${escHtml(item.segmentName)}</div>
+        </div>
+        <span class="tag tag-waiting">Awaiting FW ID</span>
+      </div>
+      <div class="fw-section">
+        <h4>Fill in FreeWheel info (next day after Databricks)</h4>
+        <div class="grid2" style="gap:8px">
+          <div class="field">
+            <label>FW Segment Name</label>
+            <input type="text" id="fw-name-${item.id}" placeholder="Segment name from FreeWheel…">
+          </div>
+          <div class="field">
+            <label>FW Segment ID</label>
+            <input type="text" id="fw-id-${item.id}" placeholder="e.g. 1438604">
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn-primary" onclick="completeFW(${item.id},'${escAttr(item.genre)}','${escAttr(item.title)}','${escAttr(item.segmentName)}')">
+            Write to segment doc
+          </button>
+          <button class="btn-ghost" onclick="dismissItem(${item.id})">Dismiss</button>
+        </div>
+        <div class="banner" id="fw-result-${item.id}" style="margin-top:8px"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function completeFW(id, genre, title, segName) {
+  const fwName = document.getElementById(`fw-name-${id}`).value.trim();
+  const fwId = document.getElementById(`fw-id-${id}`).value.trim();
+  const resultEl = document.getElementById(`fw-result-${id}`);
+
+  if (!fwName || !fwId) {
+    resultEl.className = 'banner visible warning';
+    resultEl.innerHTML = `<div class="banner-icon">!</div><div class="banner-body"><div class="banner-title" style="color:var(--warning-text)">Please fill in both fields</div></div>`;
+    return;
+  }
+
+  resultEl.className = 'banner visible warning';
+  resultEl.innerHTML = `<div class="banner-icon">…</div><div class="banner-body"><div class="banner-title" style="color:var(--warning-text)">Writing to sheet…</div></div>`;
+
+  const genreTab = GENRE_TABS[genre] || genre;
+  // Row format matching existing doc: Show | Genre | URL | Segment Name
+  const newRow = [title, genre, '', fwName];
+
+  let ok = false, msg = '';
+  try {
+    const r = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SEGMENT_DOC_ID}/values/${encodeURIComponent(genreTab)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + accessToken
+        },
+        body: JSON.stringify({ values: [newRow] })
+      }
+    );
+
+    if (r.status === 401) {
+      msg = 'Session expired — sign out and sign back in.';
+    } else if (r.status === 403) {
+      msg = 'Permission denied on segment doc.';
+    } else if (!r.ok) {
+      const j = await r.json().catch(()=>({}));
+      msg = j?.error?.message || `HTTP ${r.status}`;
+    } else {
+      const j = await r.json();
+      ok = true;
+      msg = `"${fwName}" added to the ${genreTab} tab (${j.updates?.updatedRange||''}).`;
+    }
+  } catch(e) {
+    msg = 'Network error. Row: ' + newRow.join(' | ');
+  }
+
+  if (ok) {
+    // Also update tracker row — append a note (full update requires knowing row number;
+    // for simplicity we append a completion record)
+    try {
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(TRACKER_TAB)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+          body: JSON.stringify({ values: [[title, '', '', '', 'TRUE', '', fwName, fwId, 'COMPLETE', `FW ID added ${new Date().toLocaleDateString()}`]] })
+        }
+      );
+    } catch(e) {}
+
+    resultEl.className = 'banner visible success';
+    resultEl.innerHTML = `<div class="banner-icon" style="background:var(--success-border);color:#fff">✓</div><div class="banner-body"><div class="banner-title" style="color:var(--success-text)">Done!</div><div class="banner-msg" style="color:var(--success-text)">${msg}</div></div>`;
+    setTimeout(() => dismissItem(id), 2500);
+  } else {
+    resultEl.className = 'banner visible warning';
+    resultEl.innerHTML = `<div class="banner-icon">!</div><div class="banner-body"><div class="banner-title" style="color:var(--warning-text)">Needs attention</div><div class="banner-msg" style="color:var(--warning-text)">${msg}</div><div class="code-snippet" style="display:block;color:var(--warning-text)">${newRow.join(' | ')}</div></div>`;
+  }
+}
+
+function dismissItem(id) {
+  removePending(id);
+  updatePendingBadge();
+  renderPending();
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s) {
+  return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+// Init — set today's date if on page load
+document.getElementById('submitDate').value = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
